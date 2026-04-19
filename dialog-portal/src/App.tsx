@@ -36,6 +36,12 @@ function App() {
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const graphAreaRef = useRef<HTMLDivElement>(null);
+  
+  // Состояние для панорамирования и масштабирования
+  const [scale, setScale] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const panStart = useRef({ x: 0, y: 0 });
 
   // Handle node drag start
   const handleNodeMouseDown = useCallback((nodeId: string, event: React.MouseEvent) => {
@@ -84,6 +90,52 @@ function App() {
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [handleMouseMove, handleMouseUp]);
+
+  // Обработчики для панорамирования (перетаскивание фона)
+  const handleGraphAreaMouseDown = useCallback((event: React.MouseEvent) => {
+    if ((event.target as HTMLElement).closest('.graph-node')) return;
+    setIsPanning(true);
+    panStart.current = { x: event.clientX - pan.x, y: event.clientY - pan.y };
+  }, [pan]);
+
+  const handleGraphAreaMouseMove = useCallback((event: React.MouseEvent) => {
+    if (!isPanning) return;
+    setPan({
+      x: event.clientX - panStart.current.x,
+      y: event.clientY - panStart.current.y
+    });
+  }, [isPanning]);
+
+  const handleGraphAreaMouseUp = useCallback(() => {
+    setIsPanning(false);
+  }, []);
+
+  // Обработчик масштабирования колёсиком мыши
+  const handleWheel = useCallback((event: WheelEvent) => {
+    if (!graphAreaRef.current) return;
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+      const delta = event.deltaY > 0 ? 0.9 : 1.1;
+      setScale(prev => Math.min(Math.max(prev * delta, 0.2), 3));
+    }
+  }, []);
+
+  useEffect(() => {
+    const graphArea = graphAreaRef.current;
+    if (!graphArea) return;
+    graphArea.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      graphArea.removeEventListener('wheel', handleWheel);
+    };
+  }, [handleWheel]);
+
+  // Функции управления зумом
+  const handleZoomIn = () => setScale(prev => Math.min(prev * 1.2, 3));
+  const handleZoomOut = () => setScale(prev => Math.max(prev / 1.2, 0.2));
+  const handleResetView = () => {
+    setScale(1);
+    setPan({ x: 0, y: 0 });
+  };
 
   const handleAddNode = () => {
     // Добавляем узел в центре видимой области
@@ -209,13 +261,20 @@ function App() {
         <div 
           className="graph-area"
           ref={graphAreaRef}
-          style={{ overflow: 'hidden' }}
+          style={{ overflow: 'hidden', cursor: isPanning ? 'grabbing' : 'default' }}
+          onMouseDown={handleGraphAreaMouseDown}
+          onMouseMove={handleGraphAreaMouseMove}
+          onMouseUp={handleGraphAreaMouseUp}
+          onMouseLeave={handleGraphAreaMouseUp}
         >
           <div 
             className="graph-container"
             style={{
               width: '100%',
-              height: '100%'
+              height: '100%',
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+              transformOrigin: '0 0',
+              transition: isPanning ? 'none' : 'transform 0.1s ease-out'
             }}
           >
             <DialogGraph
@@ -228,6 +287,14 @@ function App() {
               onEditNodeInPlace={handleEditNodeInPlace}
               onAddResponseInPlace={handleAddResponseInPlace}
             />
+          </div>
+          
+          {/* Панель управления зумом */}
+          <div className="zoom-controls">
+            <button className="zoom-btn" onClick={handleZoomIn} title="Увеличить">+</button>
+            <span className="zoom-level">{Math.round(scale * 100)}%</span>
+            <button className="zoom-btn" onClick={handleZoomOut} title="Уменьшить">−</button>
+            <button className="zoom-btn zoom-reset" onClick={handleResetView} title="Сбросить вид">⟲</button>
           </div>
         </div>
 
