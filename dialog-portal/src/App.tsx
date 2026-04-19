@@ -5,6 +5,8 @@ import { NodeEditor } from './components/NodeEditor'
 import { DialogGraph } from './components/DialogGraph'
 import './App.css'
 
+const CURRENT_PROJECT_ID_KEY = 'dialog-portal-current-project-id';
+
 function App() {
   const {
     nodes,
@@ -177,6 +179,11 @@ function App() {
     }, 100);
   }, [addResponse, setSelectedNodeId]);
 
+  const handleSave = useCallback(() => {
+    saveProject();
+    alert(`Проект "${projectName}" сохранён!`);
+  }, [projectName, saveProject]);
+
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
   return (
@@ -194,6 +201,7 @@ function App() {
         onZoomIn={() => setScale(prev => Math.min(prev * 1.2, 2))}
         onZoomOut={() => setScale(prev => Math.max(prev * 0.8, 0.5))}
         onResetView={() => { setScale(1); setPan({ x: 0, y: 0 }); }}
+        onSave={handleSave}
       />
 
       <div className="main-content">

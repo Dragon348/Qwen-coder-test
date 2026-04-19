@@ -13,6 +13,7 @@ interface ToolbarProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onResetView: () => void;
+  onSave?: () => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -27,7 +28,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   scale,
   onZoomIn,
   onZoomOut,
-  onResetView
+  onResetView,
+  onSave
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -46,6 +48,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleSave = () => {
+    if (onSave) {
+      onSave();
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,6 +94,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       </div>
 
       <div className="toolbar-right">
+        <button 
+          className="btn-primary" 
+          onClick={handleSave}
+          title="Сохранить проект"
+        >
+          💾 Сохранить
+        </button>
+        
         <div className="zoom-controls">
           <button className="btn-secondary btn-small" onClick={onZoomOut} title="Уменьшить">
             −

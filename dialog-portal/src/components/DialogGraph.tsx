@@ -35,6 +35,10 @@ const CustomNode: React.FC<{
     <div className={`custom-node ${hasRequirement ? 'has-requirement' : ''} ${selected ? 'selected' : ''}`}>
       {/* Верхняя панель с заголовком и кнопками действий */}
       <div className="custom-node-header-row">
+        {/* Аватарка узла */}
+        <div className="node-avatar">
+          🎭
+        </div>
         {/* Клик по заголовку открывает редактирование заголовка */}
         <div 
           className="custom-node-header-title"
@@ -50,18 +54,6 @@ const CustomNode: React.FC<{
           {data.label}
         </div>
         <div className="custom-node-actions">
-          <button
-            className="node-action-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (data.onEditInPlace) {
-                data.onEditInPlace('title');
-              }
-            }}
-            title="Редактировать заголовок"
-          >
-            ✏️
-          </button>
           <button
             className="node-action-btn"
             onClick={(e) => {
@@ -373,6 +365,15 @@ style.textContent = `
     background: linear-gradient(135deg, #89b4fa, #b4befe);
     padding: 8px 12px;
     gap: 8px;
+  }
+  .node-avatar {
+    font-size: 18px;
+    line-height: 1;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .custom-node-header-title {
     color: #1e1e2e;

@@ -439,29 +439,9 @@ button {
   stroke-width: 2;
 }
 
-/* Фиксированная панель управления зумом в левом нижнем углу */
+/* Скрываем стандартные контролы React Flow */
 .react-flow__controls {
-  position: fixed !important;
-  bottom: 20px;
-  left: 20px;
-  top: auto !important;
-  right: auto !important;
-  background-color: #313244;
-  border: 1px solid #45475a;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-  transform: none !important;
-}
-
-.react-flow__controls-button {
-  background-color: #45475a;
-  border-bottom: 1px solid #313244;
-  color: #cdd6f4;
-}
-
-.react-flow__controls-button:hover {
-  background-color: #585b70;
+  display: none !important;
 }
 
 .react-flow__background {
