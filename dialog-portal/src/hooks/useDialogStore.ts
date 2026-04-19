@@ -4,24 +4,28 @@ import { generateId } from '../types';
 
 const STORAGE_KEY = 'dialog-portal-project';
 
-export const useDialogStore = () => {
-  const [nodes, setNodes] = useState<DialogNode[]>([]);
-  const [projectName, setProjectName] = useState<string>('Новый проект');
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-
-  useEffect(() => {
+// Инициализация состояния из localStorage
+const getInitialState = (): { nodes: DialogNode[]; projectName: string } => {
+  try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      try {
-        const data: DialogProject = JSON.parse(saved);
-        // Примечание: данный вызов setState безопасен, т.к. эффект выполняется только один раз при монтировании
-        setNodes(data.nodes || []);
-        setProjectName(data.name || 'Новый проект');
-      } catch (e) {
-        console.error('Failed to load project from localStorage:', e);
-      }
+      const data: DialogProject = JSON.parse(saved);
+      return {
+        nodes: data.nodes || [],
+        projectName: data.name || 'Новый проект'
+      };
     }
-  }, []);
+  } catch (e) {
+    console.error('Failed to load project from localStorage:', e);
+  }
+  return { nodes: [], projectName: 'Новый проект' };
+};
+
+export const useDialogStore = () => {
+  const initialState = getInitialState();
+  const [nodes, setNodes] = useState<DialogNode[]>(initialState.nodes);
+  const [projectName, setProjectName] = useState<string>(initialState.projectName);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   useEffect(() => {
     const project: DialogProject = {
@@ -105,7 +109,8 @@ export const useDialogStore = () => {
    * Позиции хранятся только локально для удобства редактирования
    */
   const exportToJson = useCallback((): string => {
-    // Удаляем позиции из узлов перед экспортом
+    // Удаляем позиции из узлов перед экспортом с помощью деструктуризации
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const nodesWithoutPosition = nodes.map(({ position, ...rest }) => rest);
     const project: DialogProjectExport = {
       id: generateId(),
