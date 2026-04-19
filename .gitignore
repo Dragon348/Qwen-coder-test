@@ -1,28 +1,39 @@
-```
-# Dependencies
-node_modules/
-
 # Build outputs
 dist/
 build/
 coverage/
 htmlcov/
 
-# Environment variables
+# Dependencies
+node_modules/
+.pnpm-store/
+.yarn/
+.yarn-cache/
+
+# Logs
+*.log
+
+# Environment
 .env
 .env.local
-.env.*
+*.env.*
 
-# Python cache
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
 *.so
-
-# Logs
-*.log
+.coverage
+.pytest_cache/
+.mypy_cache/
 
 # Temporary files
 *.tmp
@@ -31,55 +42,9 @@ __pycache__/
 
 # OS generated files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
-# IDE specific
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Testing
-.mypy_cache/
-.pytest_cache/
-.nyc_output/
-coverage/
-
-# Distribution / packaging
-*.tar.gz
-*.whl
-*.egg-info/
-dist/
-sdist/
-
-# Node.js
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# TypeScript
-*.tsbuildinfo
-
-# Vite
-.vite/
-
-# ESLint
-eslint-cache/
-
-# Lock files
-package-lock.json
-yarn.lock
-
-# Browser extensions
-*.crx
-*.xpi
-
-# Compression formats
+# Compressed files
 *.zip
 *.gz
 *.tar
@@ -102,13 +67,3 @@ yarn.lock
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-
-# Images (if accidentally added)
-*.png
-*.jpg
-*.jpeg
-*.bmp
-*.gif
-*.webm
-*.svg
-```
