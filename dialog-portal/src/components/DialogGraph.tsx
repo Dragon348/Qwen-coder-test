@@ -12,6 +12,9 @@ interface DialogGraphProps {
   onNodeMouseDown?: (nodeId: string, event: React.MouseEvent) => void;
   onEditNodeInPlace?: (nodeId: string, field: 'title' | 'text' | 'response', responseId?: string) => void;
   onAddResponseInPlace?: (nodeId: string) => void;
+  getGraphCoordinates?: (clientX: number, clientY: number) => { x: number; y: number };
+  scale?: number;
+  pan?: { x: number; y: number };
 }
 
 // Интерфейс данных для кастомного узла
@@ -135,12 +138,12 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
   onNodeMouseDown,
   onEditNodeInPlace,
   onAddResponseInPlace,
+  getGraphCoordinates,
+  scale = 1,
+  pan = { x: 0, y: 0 }
 }) => {
   // Состояние для отслеживания перетаскиваемого ответа при создании соединения
   const [draggedResponse, setDraggedResponse] = useState<{ response: Response; sourceNodeId: string; responseIndex: number } | null>(null);
-  
-  // Получаем доступ к трансформации (масштаб и панорамирование) из React Flow
-  const viewport = useViewport();
 
   // Преобразование узлов диалога в узлы React Flow
   const rfNodes = dialogNodes.map(node => ({
@@ -198,16 +201,19 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
   const handleDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     if (draggedResponse) {
-      // Получаем текущую трансформацию для учёта масштаба и панорамирования
-      const zoom = viewport.zoom || 1;
-      const panX = viewport.x || 0;
-      const panY = viewport.y || 0;
+      // Используем переданную функцию для получения координат с учётом масштаба и панорамирования
+      let x: number, y: number;
       
-      // Получаем координаты мыши относительно контейнера с учётом масштаба
-      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-      // Координаты внутри SVG-контейнера с учётом трансформации
-      const x = (event.clientX - rect.left - panX) / zoom;
-      const y = (event.clientY - rect.top - panY) / zoom;
+      if (getGraphCoordinates) {
+        const coords = getGraphCoordinates(event.clientX, event.clientY);
+        x = coords.x;
+        y = coords.y;
+      } else {
+        // Fallback: вычисляем координаты вручную
+        const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+        x = (event.clientX - rect.left - pan.x) / scale;
+        y = (event.clientY - rect.top - pan.y) / scale;
+      }
       
       // Находим узел, на который dropped
       // Размеры узла: 280x200 пикселей
@@ -230,7 +236,7 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
       }
       setDraggedResponse(null);
     }
-  }, [draggedResponse, dialogNodes, onCreateConnection, viewport]);
+  }, [draggedResponse, dialogNodes, onCreateConnection, getGraphCoordinates, pan, scale]);
 
   const handleDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -264,8 +270,8 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
             key={n.id}
             className={`graph-node ${n.id === selectedNodeId ? 'selected' : ''}`}
             style={{
-              left: n.position.x - canvasBounds.minX + 50,
-              top: n.position.y - canvasBounds.minY + 50,
+              left: n.position.x - canvasBounds.minX,
+              top: n.position.y - canvasBounds.minY,
               position: 'absolute'
             }}
             onClick={() => onSelectNode(n.id)}
@@ -287,8 +293,8 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
             
             // Вычисляем координаты для начала и конца стрелки с учётом смещения холста
             // Начало: правая сторона исходного узла на уровне конкретного ответа
-            const nodeX = (sourceNode.position?.x || 0) - canvasBounds.minX + 50;
-            const nodeY = (sourceNode.position?.y || 0) - canvasBounds.minY + 50;
+            const nodeX = (sourceNode.position?.x || 0) - canvasBounds.minX;
+            const nodeY = (sourceNode.position?.y || 0) - canvasBounds.minY;
             
             // Вычисляем Y координату для конкретного ответа
             // HEADER_HEIGHT + padding + (index * RESPONSE_ITEM_HEIGHT) + половина высоты ответа
@@ -299,8 +305,8 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
             const startY = responseY;
             
             // Конец: левая сторона целевого узла (середина по высоте)
-            const endX = (targetNode.position?.x || 0) - canvasBounds.minX + 50;
-            const endY = (targetNode.position?.y || 0) - canvasBounds.minY + 50 + 50;
+            const endX = (targetNode.position?.x || 0) - canvasBounds.minX;
+            const endY = (targetNode.position?.y || 0) - canvasBounds.minY + 50;
             
             const labelStr = edge.label || '';
             

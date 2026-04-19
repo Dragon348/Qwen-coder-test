@@ -66,15 +66,16 @@ function App() {
     if (isDragging && draggedNodeId) {
       const graphRect = graphAreaRef.current?.getBoundingClientRect();
       if (graphRect) {
-        const mouseX = event.clientX - graphRect.left;
-        const mouseY = event.clientY - graphRect.top;
+        // Учитываем масштаб при перетаскивании
+        const mouseX = (event.clientX - graphRect.left - pan.x) / scale;
+        const mouseY = (event.clientY - graphRect.top - pan.y) / scale;
         updateNodePosition(draggedNodeId, {
           x: mouseX - dragOffset.x,
           y: mouseY - dragOffset.y
         });
       }
     }
-  }, [isDragging, draggedNodeId, dragOffset, updateNodePosition]);
+  }, [isDragging, draggedNodeId, dragOffset, updateNodePosition, pan, scale]);
 
   // Handle drag end
   const handleMouseUp = useCallback(() => {
@@ -168,6 +169,16 @@ function App() {
   const handleCreateConnection = (sourceNodeId: string, targetNodeId: string, responseId: string) => {
     updateResponse(sourceNodeId, responseId, { nextNodeId: targetNodeId });
   };
+
+  // Функция для получения координат с учётом масштаба и панорамирования
+  const getGraphCoordinates = useCallback((clientX: number, clientY: number) => {
+    const graphRect = graphAreaRef.current?.getBoundingClientRect();
+    if (!graphRect) return { x: 0, y: 0 };
+    return {
+      x: (clientX - graphRect.left - pan.x) / scale,
+      y: (clientY - graphRect.top - pan.y) / scale
+    };
+  }, [pan, scale]);
 
   // Обработчик редактирования прямо в узле - открывает панель редактора и фокусирует нужное поле
   const handleEditNodeInPlace = useCallback((nodeId: string, field: 'title' | 'text' | 'response', responseId?: string) => {
@@ -286,6 +297,9 @@ function App() {
               onNodeMouseDown={handleNodeMouseDown}
               onEditNodeInPlace={handleEditNodeInPlace}
               onAddResponseInPlace={handleAddResponseInPlace}
+              getGraphCoordinates={getGraphCoordinates}
+              scale={scale}
+              pan={pan}
             />
           </div>
           
