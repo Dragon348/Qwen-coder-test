@@ -1,73 +1,75 @@
-# React + TypeScript + Vite
+# Dialog Portal — Редактор диалоговых деревьев
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Интерактивный визуальный редактор для создания и редактирования нелинейных диалогов. Позволяет проектировать диалоговые деревья с ветвлениями, требованиями к характеристикам персонажей и экспортом в JSON.
 
-Currently, two official plugins are available:
+## Возможности
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Визуальное редактирование узлов**: создание, перемещение и удаление блоков диалога
+- **Редактирование по клику**: кликните на заголовок, текст или ответ в узле на графе, чтобы сразу перейти к редактированию соответствующего поля в панели редактора
+- **Создание связей**: перетаскивание ответов на другие узлы для создания переходов
+- **Требования к характеристикам**: добавление условий вида `<Характеристика: Значение>` для ответов
+- **Валидация**: проверка на битые ссылки и тупиковые узлы
+- **Импорт/Экспорт**: сохранение проекта в JSON и загрузка из него (позиции узлов не экспортируются)
+- **Навигация**: масштабирование и перемещение по холсту
+- **Кривые Безье**: стрелки между узлами рисуются плавными кривыми, обходящими блоки
 
-## React Compiler
+## Установка
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Запуск
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+## Сборка
+
+```bash
+npm run build
+```
+
+## Структура проекта
+
+```
+src/
+├── components/
+│   ├── DialogGraph.tsx    # Компонент отображения графа диалога
+│   ├── NodeEditor.tsx     # Панель редактирования выбранного узла
+│   └── Toolbar.tsx        # Верхняя панель инструментов
+├── hooks/
+│   ├── useDialogStore.ts  # Хук управления состоянием проекта
+│   └── useNodeDrag.ts     # Хук перетаскивания узлов
+├── types.ts               # Типы данных проекта
+├── App.tsx                # Главный компонент приложения
+└── main.tsx               # Точка входа
+```
+
+## Как использовать
+
+1. **Создание узла**: нажмите кнопку "+ Добавить узел" на панели инструментов
+2. **Перемещение узла**: захватите узел мышью и перетащите в нужное место
+3. **Редактирование узла**:
+   - Кликните на узел, чтобы выбрать его и открыть панель редактора
+   - **Или** кликните напрямую на заголовок, текст или ответ в узле на графе — фокус автоматически перейдёт на соответствующее поле в панели редактора
+4. **Создание связи**: перетащите ответ из одного узла на другой узел
+5. **Добавление требования**: введите требование в формате `<Характеристика: Значение>` (например, `<Сила: 10>`)
+6. **Валидация**: нажмите "Проверить проект" для поиска ошибок и предупреждений
+7. **Экспорт**: нажмите "Экспорт JSON" для сохранения проекта (без позиций узлов)
+
+## Особенности реализации
+
+- Позиции узлов хранятся только локально и не включаются в экспорт
+- Для генерации уникальных ID используется `crypto.randomUUID()` с фолбэком на `Math.random()`
+- События редактирования передаются через `CustomEvent` между компонентами графа и редактора
+- Стрелки между узлами рисуются с помощью кривых Безье для лучшей читаемости
+
+## Технологии
+
+- React 19
+- TypeScript
+- Vite
+- CSS3 (без сторонних UI-библиотек)
+

@@ -18,6 +18,7 @@ interface CustomNodeData {
   text: string;
   node: DialogNode;
   onResponseDragStart?: (response: Response, event: React.MouseEvent) => void;
+  onEditField?: (field: 'title' | 'text' | 'response', responseId?: string) => void;
 }
 
 const CustomNode: React.FC<{ 
@@ -28,9 +29,34 @@ const CustomNode: React.FC<{
   
   return (
     <div className={`custom-node ${hasRequirement ? 'has-requirement' : ''} ${selected ? 'selected' : ''}`}>
-      <div className="custom-node-header">{data.label}</div>
+      {/* Клик по заголовку открывает редактирование заголовка */}
+      <div 
+        className="custom-node-header"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (data.onEditField) {
+            data.onEditField('title');
+          }
+        }}
+        title="Кликните для редактирования заголовка"
+        style={{ cursor: 'pointer' }}
+      >
+        {data.label}
+      </div>
       <div className="custom-node-content">
-        <p>{data.text.substring(0, 100)}{data.text.length > 100 ? '...' : ''}</p>
+        {/* Клик по тексту открывает редактирование текста */}
+        <p 
+          onClick={(e) => {
+            e.stopPropagation();
+            if (data.onEditField) {
+              data.onEditField('text');
+            }
+          }}
+          title="Кликните для редактирования текста"
+          style={{ cursor: 'pointer' }}
+        >
+          {data.text.substring(0, 100)}{data.text.length > 100 ? '...' : ''}
+        </p>
         {data.node.responses.length > 0 && (
           <div className="responses-list">
             {data.node.responses.map((response, index) => (
@@ -44,7 +70,14 @@ const CustomNode: React.FC<{
                     data.onResponseDragStart(response, e);
                   }
                 }}
-                title="Перетащите для создания связи"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (data.onEditField) {
+                    data.onEditField('response', response.id);
+                  }
+                }}
+                title="Перетащите для создания связи или кликните для редактирования"
+                style={{ cursor: 'pointer' }}
               >
                 <span className="response-index">{index + 1}.</span>
                 <span className="response-text">{response.text}</span>
@@ -80,6 +113,15 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
       node,
       onResponseDragStart: (response: Response) => {
         setDraggedResponse({ response, sourceNodeId: node.id });
+      },
+      onEditField: (field: 'title' | 'text' | 'response', responseId?: string) => {
+        // При клике на поле редактирования выбираем узел и передаем фокус на соответствующее поле
+        onSelectNode(node.id);
+        // Передаём событие через CustomEvent для обработки в NodeEditor
+        const event = new CustomEvent('dialog-focus-field', { 
+          detail: { nodeId: node.id, field, responseId } 
+        });
+        window.dispatchEvent(event);
       }
     },
     draggable: true
@@ -184,7 +226,6 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
             // Вычисляем контрольные точки для кривой Безье
             // Это позволяет создать плавную кривую, которая обходит блоки
             const dx = Math.abs(endX - startX);
-            const dy = Math.abs(endY - startY);
             
             // Контрольные точки для кривой Безье
             // Первая контрольная точка смещена вправо от начальной точки
