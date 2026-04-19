@@ -12,13 +12,16 @@ interface DialogGraphProps {
   onNodeMouseDown?: (nodeId: string, event: React.MouseEvent) => void;
 }
 
+// Интерфейс данных для кастомного узла
+interface CustomNodeData {
+  label: string;
+  text: string;
+  node: DialogNode;
+  onResponseDragStart?: (response: Response, event: React.MouseEvent) => void;
+}
+
 const CustomNode: React.FC<{ 
-  data: { 
-    label: string; 
-    text: string; 
-    node: DialogNode;
-    onResponseDragStart?: (response: Response, event: React.MouseEvent) => void;
-  };
+  data: CustomNodeData;
   selected?: boolean;
 }> = ({ data, selected }) => {
   const hasRequirement = data.node.responses.some(r => r.requirement);
@@ -64,8 +67,10 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
   onCreateConnection,
   onNodeMouseDown,
 }) => {
+  // Состояние для отслеживания перетаскиваемого ответа при создании соединения
   const [draggedResponse, setDraggedResponse] = useState<{ response: Response; sourceNodeId: string } | null>(null);
 
+  // Преобразование узлов диалога в узлы React Flow
   const rfNodes = dialogNodes.map(node => ({
     id: node.id,
     position: node.position || { x: 0, y: 0 },
@@ -73,7 +78,7 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
       label: node.title,
       text: node.text,
       node,
-      onResponseDragStart: (response: Response, _event: React.MouseEvent) => {
+      onResponseDragStart: (response: Response) => {
         setDraggedResponse({ response, sourceNodeId: node.id });
       }
     },
@@ -99,20 +104,30 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
   const handleDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     if (draggedResponse) {
-      // Получаем координаты мыши относительно контейнера
+      // Получаем координаты мыши относительно контейнера с учётом масштаба
       const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+      // Координаты внутри SVG-контейнера
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
       
       // Находим узел, на который dropped
+      // Размеры узла: 280x200 пикселей
       const targetNode = dialogNodes.find(node => {
         const nodeX = node.position?.x || 0;
         const nodeY = node.position?.y || 0;
         return x >= nodeX && x <= nodeX + 280 && y >= nodeY && y <= nodeY + 200;
       });
       
+      // Проверка: не создаём соединение с самим собой и проверяем отсутствие дубликата
       if (targetNode && targetNode.id !== draggedResponse.sourceNodeId) {
-        onCreateConnection(draggedResponse.sourceNodeId, targetNode.id, draggedResponse.response.id);
+        const sourceNode = dialogNodes.find(n => n.id === draggedResponse.sourceNodeId);
+        const alreadyExists = sourceNode?.responses.some(
+          r => r.id === draggedResponse.response.id && r.nextNodeId === targetNode.id
+        );
+        
+        if (!alreadyExists) {
+          onCreateConnection(draggedResponse.sourceNodeId, targetNode.id, draggedResponse.response.id);
+        }
       }
       setDraggedResponse(null);
     }
@@ -146,7 +161,7 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
               }
             }}
           >
-            <CustomNode data={n.data as any} selected={n.id === selectedNodeId} />
+            <CustomNode data={n.data} selected={n.id === selectedNodeId} />
           </div>
         ))}
         
@@ -156,28 +171,50 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
             const targetNode = dialogNodes.find(n => n.id === edge.target);
             if (!sourceNode || !targetNode) return null;
             
+            // Вычисляем координаты для начала и конца стрелки
+            // Начало: правая сторона исходного узла (середина по высоте)
             const startX = (sourceNode.position?.x || 0) + 280;
             const startY = (sourceNode.position?.y || 0) + 50;
+            // Конец: левая сторона целевого узла (середина по высоте)
             const endX = targetNode.position?.x || 0;
             const endY = targetNode.position?.y || 0;
             
             const labelStr = edge.label || '';
             
+            // Вычисляем контрольные точки для кривой Безье
+            // Это позволяет создать плавную кривую, которая обходит блоки
+            const dx = Math.abs(endX - startX);
+            const dy = Math.abs(endY - startY);
+            
+            // Контрольные точки для кривой Безье
+            // Первая контрольная точка смещена вправо от начальной точки
+            const cp1x = startX + Math.max(50, dx * 0.5);
+            const cp1y = startY;
+            // Вторая контрольная точка смещена влево от конечной точки
+            const cp2x = endX - Math.max(50, dx * 0.5);
+            const cp2y = endY;
+            
+            // Создаём путь кривой Безье
+            const pathD = `M ${startX} ${startY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${endX} ${endY}`;
+            
+            // Вычисляем точку для размещения метки (посередине кривой)
+            const midX = (startX + endX) / 2;
+            const midY = (startY + endY) / 2;
+            
             return (
               <g key={edge.id}>
-                <line
-                  x1={startX}
-                  y1={startY}
-                  x2={endX}
-                  y2={endY}
+                {/* Кривая Безье вместо прямой линии */}
+                <path
+                  d={pathD}
+                  fill="none"
                   stroke="#4a90d9"
                   strokeWidth="2"
                   markerEnd="url(#arrowhead)"
                 />
                 {labelStr && (
                   <text
-                    x={(startX + endX) / 2}
-                    y={(startY + endY) / 2 - 5}
+                    x={midX}
+                    y={midY - 5}
                     fontSize="11"
                     fill="#333"
                     textAnchor="middle"
@@ -214,42 +251,4 @@ export const DialogGraph: React.FC<DialogGraphProps> = (props) => {
       <DialogGraphInner {...props} />
     </ReactFlowProvider>
   );
-};
-
-// Custom hook for node dragging
-export const useNodeDrag = (
-  nodes: DialogNode[],
-  onUpdatePosition: (nodeId: string, position: { x: number; y: number }) => void
-) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-
-  const handleMouseDown = useCallback((nodeId: string, event: React.MouseEvent) => {
-    const node = nodes.find(n => n.id === nodeId);
-    if (!node) return;
-    
-    setIsDragging(true);
-    setDraggedNodeId(nodeId);
-    setDragOffset({
-      x: event.clientX - (node.position?.x || 0),
-      y: event.clientY - (node.position?.y || 0)
-    });
-  }, [nodes]);
-
-  const handleMouseMove = useCallback((event: MouseEvent) => {
-    if (!isDragging || !draggedNodeId) return;
-    
-    onUpdatePosition(draggedNodeId, {
-      x: event.clientX - dragOffset.x,
-      y: event.clientY - dragOffset.y
-    });
-  }, [isDragging, draggedNodeId, dragOffset, onUpdatePosition]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-    setDraggedNodeId(null);
-  }, []);
-
-  return { isDragging, draggedNodeId, handleMouseDown, handleMouseMove, handleMouseUp };
 };
