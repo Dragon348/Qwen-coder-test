@@ -17,6 +17,7 @@ export interface DialogNode {
   title: string;
   text: string;
   responses: Response[];
+  // Позиция используется только для отображения в редакторе, не экспортируется
   position?: { x: number; y: number };
 }
 
@@ -28,7 +29,25 @@ export interface DialogProject {
   updatedAt: number;
 }
 
+/**
+ * Интерфейс для экспорта проекта без позиций узлов
+ * Позиции хранятся только локально для удобства редактирования
+ */
+export interface DialogProjectExport {
+  id: string;
+  name: string;
+  nodes: Omit<DialogNode, 'position'>[];
+  createdAt: number;
+  updatedAt: number;
+}
+
 export const generateId = (): string => {
+  // Используем crypto.randomUUID() для более надёжной генерации уникальных ID
+  // Это снижает вероятность коллизий по сравнению с Math.random()
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Фолбэк для старых браузеров
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 };
 

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { DialogNode, Response, DialogProject } from '../types';
+import type { DialogNode, Response, DialogProject, DialogProjectExport } from '../types';
 import { generateId } from '../types';
 
 const STORAGE_KEY = 'dialog-portal-project';
@@ -14,6 +14,7 @@ export const useDialogStore = () => {
     if (saved) {
       try {
         const data: DialogProject = JSON.parse(saved);
+        // Примечание: данный вызов setState безопасен, т.к. эффект выполняется только один раз при монтировании
         setNodes(data.nodes || []);
         setProjectName(data.name || 'Новый проект');
       } catch (e) {
@@ -99,11 +100,17 @@ export const useDialogStore = () => {
     ));
   }, []);
 
+  /**
+   * Экспорт проекта в JSON без позиций узлов
+   * Позиции хранятся только локально для удобства редактирования
+   */
   const exportToJson = useCallback((): string => {
-    const project: DialogProject = {
+    // Удаляем позиции из узлов перед экспортом
+    const nodesWithoutPosition = nodes.map(({ position, ...rest }) => rest);
+    const project: DialogProjectExport = {
       id: generateId(),
       name: projectName,
-      nodes,
+      nodes: nodesWithoutPosition,
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
@@ -114,7 +121,12 @@ export const useDialogStore = () => {
     try {
       const project: DialogProject = JSON.parse(jsonString);
       setProjectName(project.name || 'Импортированный проект');
-      setNodes(project.nodes || []);
+      // При импорте добавляем дефолтные позиции, если их нет
+      const nodesWithPositions = (project.nodes || []).map((node, index) => ({
+        ...node,
+        position: node.position || { x: 100 + (index % 5) * 300, y: 100 + Math.floor(index / 5) * 250 }
+      }));
+      setNodes(nodesWithPositions);
       return true;
     } catch (e) {
       console.error('Failed to import project:', e);

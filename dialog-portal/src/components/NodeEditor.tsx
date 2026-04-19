@@ -31,13 +31,19 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
     }
   };
 
+  const handleDeleteNode = () => {
+    if (window.confirm(`Вы уверены, что хотите удалить узел "${node.title}"? Это действие нельзя отменить.`)) {
+      onDeleteNode(node.id);
+    }
+  };
+
   return (
     <div className="node-editor">
       <div className="editor-header">
         <h3>Редактирование узла</h3>
         <button 
           className="btn-delete btn-small" 
-          onClick={() => onDeleteNode(node.id)}
+          onClick={handleDeleteNode}
           title="Удалить узел"
         >
           ✕
