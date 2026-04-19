@@ -50,16 +50,21 @@ function App() {
     const node = nodes.find(n => n.id === nodeId);
     if (!node) return;
     
+    const graphRect = graphAreaRef.current?.getBoundingClientRect();
+    if (!graphRect) return;
+
+    // Вычисляем позицию мыши в координатах графа с учетом масштаба и панорамирования
+    const mouseX = (event.clientX - graphRect.left - pan.x) / scale;
+    const mouseY = (event.clientY - graphRect.top - pan.y) / scale;
+    
     setIsDragging(true);
     setDraggedNodeId(nodeId);
-    const graphRect = graphAreaRef.current?.getBoundingClientRect();
-    const offsetX = graphRect ? (event.clientX - graphRect.left) : 0;
-    const offsetY = graphRect ? (event.clientY - graphRect.top) : 0;
+    // Сохраняем смещение относительно позиции узла в координатах графа
     setDragOffset({
-      x: offsetX - (node.position?.x || 0),
-      y: offsetY - (node.position?.y || 0)
+      x: mouseX - (node.position?.x || 0),
+      y: mouseY - (node.position?.y || 0)
     });
-  }, [nodes]);
+  }, [nodes, pan, scale]);
 
   // Handle node drag move
   const handleMouseMove = useCallback((event: MouseEvent) => {
