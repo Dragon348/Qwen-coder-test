@@ -10,6 +10,7 @@ interface NodeEditorProps {
   onUpdateResponse: (nodeId: string, responseId: string, updates: Partial<Response>) => void;
   onDeleteResponse: (nodeId: string, responseId: string) => void;
   onDeleteNode: (nodeId: string) => void;
+  onAvatarUpload?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const NodeEditor: React.FC<NodeEditorProps> = ({
@@ -19,7 +20,8 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
   onAddResponse,
   onUpdateResponse,
   onDeleteResponse,
-  onDeleteNode
+  onDeleteNode,
+  onAvatarUpload
 }) => {
   const [requirementText, setRequirementText] = React.useState('');
   
@@ -114,6 +116,33 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
           placeholder="Введите текст диалога"
           rows={4}
         />
+      </div>
+
+      <div className="form-group">
+        <label>Аватар узла:</label>
+        <div className="avatar-upload-container">
+          {node.avatar && (
+            <img src={node.avatar} alt="node avatar" className="node-avatar-preview" />
+          )}
+          <label className="btn-secondary avatar-upload-btn">
+            📷 Загрузить аватар
+            <input
+              type="file"
+              accept="image/*"
+              onChange={onAvatarUpload}
+              style={{ display: 'none' }}
+            />
+          </label>
+          {node.avatar && (
+            <button 
+              className="btn-delete btn-small"
+              onClick={() => onUpdateNode(node.id, { avatar: undefined })}
+              title="Удалить аватар"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="responses-section">

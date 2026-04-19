@@ -9,10 +9,6 @@ interface ToolbarProps {
   onValidate: () => void;
   validationErrors: string[];
   validationWarnings: string[];
-  scale: number;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onResetView: () => void;
   onSave?: () => void;
 }
 
@@ -25,10 +21,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onValidate,
   validationErrors,
   validationWarnings,
-  scale,
-  onZoomIn,
-  onZoomOut,
-  onResetView,
   onSave
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -95,25 +87,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
       <div className="toolbar-right">
         <button 
-          className="btn-primary" 
+          className="btn-save" 
           onClick={handleSave}
           title="Сохранить проект"
         >
           💾 Сохранить
         </button>
-        
-        <div className="zoom-controls">
-          <button className="btn-secondary btn-small" onClick={onZoomOut} title="Уменьшить">
-            −
-          </button>
-          <span className="zoom-level">{Math.round(scale * 100)}%</span>
-          <button className="btn-secondary btn-small" onClick={onZoomIn} title="Увеличить">
-            +
-          </button>
-          <button className="btn-secondary btn-small" onClick={onResetView} title="Сбросить вид">
-            ⟲
-          </button>
-        </div>
         
         <button className="btn-secondary" onClick={handleExport}>
           📥 Экспорт JSON

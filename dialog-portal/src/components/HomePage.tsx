@@ -116,67 +116,78 @@ export const HomePage: React.FC = () => {
   return (
     <div className="home-page">
       <header className="home-header">
-        <h1>🎭 Управление проектами диалогов</h1>
+        <h1>🎭 Dialog Portal</h1>
+        <p className="home-subtitle">Управление проектами диалогов</p>
       </header>
 
       <main className="home-main">
-        {/* Создание нового проекта */}
-        <section className="create-project-section">
-          <h2>Создать новый проект</h2>
-          <div className="create-project-form">
-            <input
-              type="text"
-              value={newProjectName}
-              onChange={(e) => setNewProjectName(e.target.value)}
-              placeholder="Название проекта"
-              className="project-name-input"
-              onKeyPress={(e) => e.key === 'Enter' && handleCreateProject()}
-            />
-            <button 
-              className="btn-primary" 
-              onClick={handleCreateProject}
-            >
-              + Создать проект
-            </button>
+        {/* Создание нового проекта и импорт */}
+        <section className="home-actions-section">
+          <div className="create-project-card">
+            <h2>✨ Создать новый проект</h2>
+            <div className="create-project-form">
+              <input
+                type="text"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                placeholder="Название проекта"
+                className="project-name-input"
+                onKeyPress={(e) => e.key === 'Enter' && handleCreateProject()}
+              />
+              <button 
+                className="btn-primary btn-create" 
+                onClick={handleCreateProject}
+              >
+                + Создать
+              </button>
+            </div>
           </div>
-        </section>
-
-        {/* Импорт проекта */}
-        <section className="import-project-section">
-          <h2>Импортировать проект</h2>
-          <label className="btn-secondary import-label">
-            📤 Загрузить из файла
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleImportProject}
-              style={{ display: 'none' }}
-            />
-          </label>
+          
+          <div className="import-project-card">
+            <h2>📤 Импорт проекта</h2>
+            <label className="btn-secondary import-label">
+              Загрузить из файла
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImportProject}
+                style={{ display: 'none' }}
+              />
+            </label>
+          </div>
         </section>
 
         {/* Список проектов */}
         <section className="projects-list-section">
-          <h2>Мои проекты ({projects.length})</h2>
+          <h2>📁 Мои проекты <span className="projects-count">({projects.length})</span></h2>
           
           {projects.length === 0 ? (
-            <p className="no-projects-message">У вас пока нет проектов. Создайте новый или импортируйте существующий.</p>
+            <div className="no-projects-message">
+              <p>У вас пока нет проектов</p>
+              <p className="hint">Создайте новый или импортируйте существующий</p>
+            </div>
           ) : (
             <div className="projects-grid">
               {projects.map(project => (
                 <div key={project.id} className="project-card">
                   <div className="project-card-header">
+                    <div className="project-icon">📋</div>
                     <h3>{project.name}</h3>
-                    <span className="project-nodes-count">{project.nodes.length} узлов</span>
                   </div>
                   
                   <div className="project-card-info">
-                    <p className="project-date">
-                      Создан: {new Date(project.createdAt).toLocaleDateString('ru-RU')}
-                    </p>
-                    <p className="project-date">
-                      Обновлён: {new Date(project.updatedAt).toLocaleDateString('ru-RU')}
-                    </p>
+                    <div className="project-stat">
+                      <span className="stat-value">{project.nodes.length}</span>
+                      <span className="stat-label">узлов</span>
+                    </div>
+                    <div className="project-dates">
+                      <p className="project-date">
+                        <span className="date-label">Создан:</span> {new Date(project.createdAt).toLocaleDateString('ru-RU')}
+                      </p>
+                      <p className="project-date">
+                        <span className="date-label">Обновлён:</span> {new Date(project.updatedAt).toLocaleDateString('ru-RU')}
+                      </p>
+                    </div>
                   </div>
                   
                   <div className="project-card-actions">
@@ -184,17 +195,18 @@ export const HomePage: React.FC = () => {
                       className="btn-primary btn-open"
                       onClick={() => handleOpenProject(project.id)}
                     >
-                      📂 Открыть
+                      Открыть
                     </button>
                     <button 
                       className="btn-secondary btn-export"
                       onClick={() => handleExportProject(project)}
                     >
-                      📥 Экспорт
+                      Экспорт
                     </button>
                     <button 
-                      className="btn-delete btn-small"
+                      className="btn-delete btn-icon"
                       onClick={() => handleDeleteProject(project.id, project.name)}
+                      title="Удалить проект"
                     >
                       🗑️
                     </button>

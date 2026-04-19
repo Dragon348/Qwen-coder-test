@@ -5,54 +5,43 @@ node_modules/
 # Build outputs
 dist/
 build/
-*.tsbuildinfo
+*.js.map
+*.ts.map
 
-# Environment
+# Environment variables
 .env
 .env.local
 *.env.*
 
-# Editors
+# IDE files
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# Python (if any Python files exist in project)
+# Logs
+*.log
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-# Logs
-*.log
+# Temporary files
+*.tmp
+*.temp
 
-# OS generated files
+# OS specific
 .DS_Store
 Thumbs.db
 
-# Temporary files
-*.tmp
-*.swp
-*.swo
-
-# Coverage reports
-coverage/
-htmlcov/
-.coverage
-
-# MyPy cache
-.mypy_cache/
-.pytest_cache/
-
-# Compiled binaries
-*.exe
-*.dll
-*.so
-*.a
-*.o
-*.obj
-*.out
-
-# Archives
+# Compressed files
 *.zip
 *.gz
 *.tar

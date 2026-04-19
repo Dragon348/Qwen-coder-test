@@ -37,7 +37,11 @@ const CustomNode: React.FC<{
       <div className="custom-node-header-row">
         {/* Аватарка узла */}
         <div className="node-avatar">
-          🎭
+          {data.node.avatar ? (
+            <img src={data.node.avatar} alt="avatar" className="node-avatar-img" />
+          ) : (
+            '🎭'
+          )}
         </div>
         {/* Клик по заголовку открывает редактирование заголовка */}
         <div 
@@ -319,8 +323,9 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
                     x={midX}
                     y={midY - 5}
                     fontSize="11"
-                    fill="#333"
+                    fill="#f9e2af"
                     textAnchor="middle"
+                    fontWeight="bold"
                   >
                     {labelStr.length > 30 ? labelStr.substring(0, 30) + '...' : labelStr}
                   </text>
