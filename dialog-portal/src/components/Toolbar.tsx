@@ -10,6 +10,9 @@ interface ToolbarProps {
   validationErrors: string[];
   validationWarnings: string[];
   onSave?: () => void;
+  projectAvatar?: string;
+  onProjectAvatarUpload?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onGoHome?: () => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -21,7 +24,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onValidate,
   validationErrors,
   validationWarnings,
-  onSave
+  onSave,
+  projectAvatar,
+  onProjectAvatarUpload,
+  onGoHome
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -66,6 +72,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   return (
     <div className="toolbar">
       <div className="toolbar-left">
+        <button 
+          className="btn-secondary btn-home" 
+          onClick={onGoHome}
+          title="На главную"
+        >
+          🏠 Главная
+        </button>
+        
         <div className="project-name-input">
           <label>Проект:</label>
           <input
@@ -86,6 +100,21 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       </div>
 
       <div className="toolbar-right">
+        <div className="avatar-upload-section">
+          {projectAvatar && (
+            <img src={projectAvatar} alt="project avatar" className="toolbar-avatar-preview" />
+          )}
+          <label className="btn-secondary avatar-upload-btn toolbar-avatar-btn">
+            📷 Аватар проекта
+            <input
+              type="file"
+              accept="image/*"
+              onChange={onProjectAvatarUpload}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
+        
         <button 
           className="btn-save" 
           onClick={handleSave}

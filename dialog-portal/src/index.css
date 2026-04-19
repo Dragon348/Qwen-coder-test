@@ -468,19 +468,26 @@ button {
 }
 
 /* Avatar upload styles */
-.avatar-upload-container {
+.avatar-upload-container,
+.avatar-upload-section {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.node-avatar-preview {
-  width: 48px;
-  height: 48px;
+.node-avatar-preview,
+.toolbar-avatar-preview {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #89b4fa;
+}
+
+.toolbar-avatar-preview {
+  width: 36px;
+  height: 36px;
 }
 
 .avatar-upload-btn {
@@ -490,17 +497,22 @@ button {
   gap: 4px;
 }
 
+.toolbar-avatar-btn {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
 /* Node avatar in graph */
 .node-avatar {
   font-size: 18px;
   line-height: 1;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #89b4fa, #b4befe);
-  border-radius: 50%;
+  border-radius: 6px;
   overflow: hidden;
 }
 

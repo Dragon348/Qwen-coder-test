@@ -28,6 +28,7 @@ export interface DialogProject {
   nodes: DialogNode[];
   createdAt: number;
   updatedAt: number;
+  avatar?: string; // Глобальный аватар для всех узлов проекта
 }
 
 /**

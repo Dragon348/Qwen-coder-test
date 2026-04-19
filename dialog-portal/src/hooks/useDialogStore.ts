@@ -78,6 +78,14 @@ export const useDialogStore = () => {
   const [projectId] = useState<string>(() => {
     return localStorage.getItem(CURRENT_PROJECT_ID_KEY) || generateId();
   });
+  const [projectAvatar, setProjectAvatar] = useState<string | undefined>(() => {
+    const currentProjectId = localStorage.getItem(CURRENT_PROJECT_ID_KEY);
+    if (currentProjectId) {
+      const project = loadProjectById(currentProjectId);
+      return project?.avatar;
+    }
+    return undefined;
+  });
 
   useEffect(() => {
     const project: DialogProject = {
@@ -85,12 +93,13 @@ export const useDialogStore = () => {
       name: projectName,
       nodes,
       createdAt: Date.now(),
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      avatar: projectAvatar
     };
     // Сохраняем и в старом формате (для обратной совместимости), и в новом хранилище проектов
     localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
     saveProjectToStorage(project);
-  }, [nodes, projectName, projectId]);
+  }, [nodes, projectName, projectId, projectAvatar]);
 
   const addNode = useCallback((position?: { x: number; y: number }) => {
     const newNode: DialogNode = {
@@ -98,12 +107,13 @@ export const useDialogStore = () => {
       title: 'Новый узел',
       text: 'Введите текст диалога...',
       responses: [],
-      position: position || { x: 100, y: 100 }
+      position: position || { x: 100, y: 100 },
+      avatar: projectAvatar // Применяем аватар проекта к новому узлу
     };
     setNodes(prev => [...prev, newNode]);
     setSelectedNodeId(newNode.id);
     return newNode.id;
-  }, []);
+  }, [projectAvatar]);
 
   const updateNode = useCallback((nodeId: string, updates: Partial<DialogNode>) => {
     setNodes(prev => prev.map(node => 
@@ -180,10 +190,12 @@ export const useDialogStore = () => {
     try {
       const project: DialogProject = JSON.parse(jsonString);
       setProjectName(project.name || 'Импортированный проект');
+      setProjectAvatar(project.avatar); // Загружаем аватар проекта
       // При импорте добавляем дефолтные позиции, если их нет
       const nodesWithPositions = (project.nodes || []).map((node, index) => ({
         ...node,
-        position: node.position || { x: 100 + (index % 5) * 300, y: 100 + Math.floor(index / 5) * 250 }
+        position: node.position || { x: 100 + (index % 5) * 300, y: 100 + Math.floor(index / 5) * 250 },
+        avatar: project.avatar || node.avatar // Применяем аватар проекта или узла
       }));
       setNodes(nodesWithPositions);
       return true;
@@ -191,7 +203,7 @@ export const useDialogStore = () => {
       console.error('Failed to import project:', e);
       return false;
     }
-  }, []);
+  }, [setProjectAvatar]);
 
   const validate = useCallback(() => {
     const errors: string[] = [];
@@ -249,6 +261,8 @@ export const useDialogStore = () => {
     importFromJson,
     validate,
     updateNodePosition,
-    saveProject
+    saveProject,
+    projectAvatar,
+    setProjectAvatar
   };
 };

@@ -25,7 +25,9 @@ function App() {
     importFromJson,
     validate,
     updateNodePosition,
-    saveProject
+    saveProject,
+    projectAvatar,
+    setProjectAvatar
   } = useDialogStore();
   
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -138,7 +140,25 @@ function App() {
     }, 100);
   }, [addResponse, setSelectedNodeId]);
 
-  // Обработчик загрузки аватара
+  // Обработчик загрузки аватара проекта
+  const handleProjectAvatarUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const avatarData = e.target?.result as string;
+      setProjectAvatar(avatarData);
+      // Применяем аватар ко всем существующим узлам
+      nodes.forEach(node => {
+        updateNode(node.id, { avatar: avatarData });
+      });
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  }, [nodes, updateNode, setProjectAvatar]);
+
+  // Обработчик загрузки аватара для отдельного узла
   const handleAvatarUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !selectedNodeId) return;
@@ -171,6 +191,9 @@ function App() {
         validationErrors={validationErrors}
         validationWarnings={validationWarnings}
         onSave={handleSave}
+        projectAvatar={projectAvatar}
+        onProjectAvatarUpload={handleProjectAvatarUpload}
+        onGoHome={() => { window.location.href = '/'; }}
       />
 
       <div className="main-content">
