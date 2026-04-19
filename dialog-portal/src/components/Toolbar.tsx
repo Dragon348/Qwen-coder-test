@@ -9,10 +9,10 @@ interface ToolbarProps {
   onValidate: () => void;
   validationErrors: string[];
   validationWarnings: string[];
-  scale: number;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onResetView: () => void;
+  onSave?: () => void;
+  projectAvatar?: string;
+  onProjectAvatarUpload?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onGoHome?: () => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -24,10 +24,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onValidate,
   validationErrors,
   validationWarnings,
-  scale,
-  onZoomIn,
-  onZoomOut,
-  onResetView
+  onSave,
+  projectAvatar,
+  onProjectAvatarUpload,
+  onGoHome
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -48,6 +48,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     fileInputRef.current?.click();
   };
 
+  const handleSave = () => {
+    if (onSave) {
+      onSave();
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -66,6 +72,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   return (
     <div className="toolbar">
       <div className="toolbar-left">
+        <button 
+          className="btn-secondary btn-home" 
+          onClick={onGoHome}
+          title="На главную"
+        >
+          🏠 Главная
+        </button>
+        
         <div className="project-name-input">
           <label>Проект:</label>
           <input
@@ -86,18 +100,28 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       </div>
 
       <div className="toolbar-right">
-        <div className="zoom-controls">
-          <button className="btn-secondary btn-small" onClick={onZoomOut} title="Уменьшить">
-            −
-          </button>
-          <span className="zoom-level">{Math.round(scale * 100)}%</span>
-          <button className="btn-secondary btn-small" onClick={onZoomIn} title="Увеличить">
-            +
-          </button>
-          <button className="btn-secondary btn-small" onClick={onResetView} title="Сбросить вид">
-            ⟲
-          </button>
+        <div className="avatar-upload-section">
+          {projectAvatar && (
+            <img src={projectAvatar} alt="project avatar" className="toolbar-avatar-preview" />
+          )}
+          <label className="btn-secondary avatar-upload-btn toolbar-avatar-btn">
+            📷 Аватар проекта
+            <input
+              type="file"
+              accept="image/*"
+              onChange={onProjectAvatarUpload}
+              style={{ display: 'none' }}
+            />
+          </label>
         </div>
+        
+        <button 
+          className="btn-save" 
+          onClick={handleSave}
+          title="Сохранить проект"
+        >
+          💾 Сохранить
+        </button>
         
         <button className="btn-secondary" onClick={handleExport}>
           📥 Экспорт JSON

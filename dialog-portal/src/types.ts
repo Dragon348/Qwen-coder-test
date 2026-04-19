@@ -19,6 +19,7 @@ export interface DialogNode {
   responses: Response[];
   // Позиция используется только для отображения в редакторе, не экспортируется
   position?: { x: number; y: number };
+  avatar?: string; // URL или base64 изображение аватара
 }
 
 export interface DialogProject {
@@ -27,6 +28,7 @@ export interface DialogProject {
   nodes: DialogNode[];
   createdAt: number;
   updatedAt: number;
+  avatar?: string; // Глобальный аватар для всех узлов проекта
 }
 
 /**

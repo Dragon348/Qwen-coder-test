@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import { Controls, Background, ReactFlowProvider, useViewport } from '@xyflow/react';
+import React, { useCallback, useState, useRef } from 'react';
+import { Background, ReactFlowProvider, useViewport } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { DialogNode, Response } from '../types';
 
@@ -12,6 +12,9 @@ interface DialogGraphProps {
   onNodeMouseDown?: (nodeId: string, event: React.MouseEvent) => void;
   onEditNodeInPlace?: (nodeId: string, field: 'title' | 'text' | 'response', responseId?: string) => void;
   onAddResponseInPlace?: (nodeId: string) => void;
+  getGraphCoordinates?: (clientX: number, clientY: number) => { x: number; y: number };
+  scale?: number;
+  pan?: { x: number; y: number };
 }
 
 // Интерфейс данных для кастомного узла
@@ -19,11 +22,16 @@ interface CustomNodeData {
   label: string;
   text: string;
   node: DialogNode;
-  onResponseDragStart?: (response: Response, event: React.MouseEvent) => void;
+  onResponseDragStart?: (response: Response, event: React.MouseEvent, responseIndex: number) => void;
   onEditField?: (field: 'title' | 'text' | 'response', responseId?: string) => void;
   onEditInPlace?: (field: 'title' | 'text' | 'response', responseId?: string) => void;
   onAddResponse?: () => void;
 }
+
+const NODE_WIDTH = 280;
+const NODE_HEADER_HEIGHT = 44;
+const RESPONSE_ITEM_HEIGHT = 32;
+const CONTENT_PADDING = 12;
 
 const CustomNode: React.FC<{ 
   data: CustomNodeData;
@@ -35,6 +43,14 @@ const CustomNode: React.FC<{
     <div className={`custom-node ${hasRequirement ? 'has-requirement' : ''} ${selected ? 'selected' : ''}`}>
       {/* Верхняя панель с заголовком и кнопками действий */}
       <div className="custom-node-header-row">
+        {/* Аватарка узла */}
+        <div className="node-avatar">
+          {data.node.avatar ? (
+            <img src={data.node.avatar} alt="avatar" className="node-avatar-img" />
+          ) : (
+            '🎭'
+          )}
+        </div>
         {/* Клик по заголовку открывает редактирование заголовка */}
         <div 
           className="custom-node-header-title"
@@ -50,18 +66,6 @@ const CustomNode: React.FC<{
           {data.label}
         </div>
         <div className="custom-node-actions">
-          <button
-            className="node-action-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (data.onEditInPlace) {
-                data.onEditInPlace('title');
-              }
-            }}
-            title="Редактировать заголовок"
-          >
-            ✏️
-          </button>
           <button
             className="node-action-btn"
             onClick={(e) => {
@@ -100,7 +104,7 @@ const CustomNode: React.FC<{
                 onDragStart={(e) => {
                   e.stopPropagation();
                   if (data.onResponseDragStart) {
-                    data.onResponseDragStart(response, e);
+                    data.onResponseDragStart(response, e, index);
                   }
                 }}
                 onClick={(e) => {
@@ -134,12 +138,12 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
   onNodeMouseDown,
   onEditNodeInPlace,
   onAddResponseInPlace,
+  getGraphCoordinates,
+  scale = 1,
+  pan = { x: 0, y: 0 }
 }) => {
   // Состояние для отслеживания перетаскиваемого ответа при создании соединения
-  const [draggedResponse, setDraggedResponse] = useState<{ response: Response; sourceNodeId: string } | null>(null);
-  
-  // Получаем доступ к трансформации (масштаб и панорамирование) из React Flow
-  const viewport = useViewport();
+  const [draggedResponse, setDraggedResponse] = useState<{ response: Response; sourceNodeId: string; responseIndex: number } | null>(null);
 
   // Преобразование узлов диалога в узлы React Flow
   const rfNodes = dialogNodes.map(node => ({
@@ -149,8 +153,8 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
       label: node.title,
       text: node.text,
       node,
-      onResponseDragStart: (response: Response) => {
-        setDraggedResponse({ response, sourceNodeId: node.id });
+      onResponseDragStart: (response: Response, _event: React.MouseEvent, responseIndex: number) => {
+        setDraggedResponse({ response, sourceNodeId: node.id, responseIndex });
       },
       onEditField: (field: 'title' | 'text' | 'response', responseId?: string) => {
         // При клике на поле редактирования выбираем узел и передаем фокус на соответствующее поле
@@ -177,9 +181,9 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
     draggable: true
   }));
 
-  const edges: Array<{ id: string; source: string; target: string; label?: string }> = [];
+  const edges: Array<{ id: string; source: string; target: string; label?: string; responseIndex: number }> = [];
   dialogNodes.forEach(node => {
-    node.responses.forEach(response => {
+    node.responses.forEach((response, index) => {
       if (response.nextNodeId) {
         edges.push({
           id: `${node.id}-${response.id}`,
@@ -187,7 +191,8 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
           target: response.nextNodeId,
           label: response.requirement 
             ? `${response.text} (<${response.requirement.characteristic}: ${response.requirement.value}>)`
-            : response.text
+            : response.text,
+          responseIndex: index
         });
       }
     });
@@ -196,16 +201,19 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
   const handleDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     if (draggedResponse) {
-      // Получаем текущую трансформацию для учёта масштаба и панорамирования
-      const zoom = viewport.zoom || 1;
-      const panX = viewport.x || 0;
-      const panY = viewport.y || 0;
+      // Используем переданную функцию для получения координат с учётом масштаба и панорамирования
+      let x: number, y: number;
       
-      // Получаем координаты мыши относительно контейнера с учётом масштаба
-      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-      // Координаты внутри SVG-контейнера с учётом трансформации
-      const x = (event.clientX - rect.left - panX) / zoom;
-      const y = (event.clientY - rect.top - panY) / zoom;
+      if (getGraphCoordinates) {
+        const coords = getGraphCoordinates(event.clientX, event.clientY);
+        x = coords.x;
+        y = coords.y;
+      } else {
+        // Fallback: вычисляем координаты вручную
+        const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+        x = (event.clientX - rect.left - pan.x) / scale;
+        y = (event.clientY - rect.top - pan.y) / scale;
+      }
       
       // Находим узел, на который dropped
       // Размеры узла: 280x200 пикселей
@@ -228,7 +236,7 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
       }
       setDraggedResponse(null);
     }
-  }, [draggedResponse, dialogNodes, onCreateConnection, viewport]);
+  }, [draggedResponse, dialogNodes, onCreateConnection, getGraphCoordinates, pan, scale]);
 
   const handleDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -262,8 +270,8 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
             key={n.id}
             className={`graph-node ${n.id === selectedNodeId ? 'selected' : ''}`}
             style={{
-              left: n.position.x - canvasBounds.minX + 50,
-              top: n.position.y - canvasBounds.minY + 50,
+              left: n.position.x - canvasBounds.minX,
+              top: n.position.y - canvasBounds.minY,
               position: 'absolute'
             }}
             onClick={() => onSelectNode(n.id)}
@@ -284,11 +292,20 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
             if (!sourceNode || !targetNode) return null;
             
             // Вычисляем координаты для начала и конца стрелки с учётом смещения холста
-            // Начало: правая сторона исходного узла (середина по высоте)
-            const startX = (sourceNode.position?.x || 0) - canvasBounds.minX + 50 + 280;
-            const startY = (sourceNode.position?.y || 0) - canvasBounds.minY + 50 + 50;
+            // Начало: правая сторона исходного узла на уровне конкретного ответа
+            const nodeX = (sourceNode.position?.x || 0) - canvasBounds.minX;
+            const nodeY = (sourceNode.position?.y || 0) - canvasBounds.minY;
+            
+            // Вычисляем Y координату для конкретного ответа
+            // HEADER_HEIGHT + padding + (index * RESPONSE_ITEM_HEIGHT) + половина высоты ответа
+            const responseY = nodeY + NODE_HEADER_HEIGHT + CONTENT_PADDING + (edge.responseIndex * RESPONSE_ITEM_HEIGHT) + (RESPONSE_ITEM_HEIGHT / 2);
+            
+            // Начало: правая сторона исходного узла на уровне ответа
+            const startX = nodeX + NODE_WIDTH;
+            const startY = responseY;
+            
             // Конец: левая сторона целевого узла (середина по высоте)
-            const endX = (targetNode.position?.x || 0) - canvasBounds.minX + 50;
+            const endX = (targetNode.position?.x || 0) - canvasBounds.minX;
             const endY = (targetNode.position?.y || 0) - canvasBounds.minY + 50;
             
             const labelStr = edge.label || '';
@@ -296,6 +313,7 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
             // Вычисляем контрольные точки для кривой Безье
             // Это позволяет создать плавную кривую, которая обходит блоки
             const dx = Math.abs(endX - startX);
+            const dy = Math.abs(endY - startY);
             
             // Контрольные точки для кривой Безье
             // Первая контрольная точка смещена вправо от начальной точки
@@ -327,8 +345,9 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
                     x={midX}
                     y={midY - 5}
                     fontSize="11"
-                    fill="#333"
+                    fill="#f9e2af"
                     textAnchor="middle"
+                    fontWeight="bold"
                   >
                     {labelStr.length > 30 ? labelStr.substring(0, 30) + '...' : labelStr}
                   </text>
@@ -350,7 +369,6 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
           </defs>
         </svg>
       </div>
-      <Controls />
       <Background />
     </div>
   );
@@ -373,6 +391,15 @@ style.textContent = `
     background: linear-gradient(135deg, #89b4fa, #b4befe);
     padding: 8px 12px;
     gap: 8px;
+  }
+  .node-avatar {
+    font-size: 18px;
+    line-height: 1;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .custom-node-header-title {
     color: #1e1e2e;

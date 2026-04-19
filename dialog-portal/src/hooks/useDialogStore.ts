@@ -3,9 +3,58 @@ import type { DialogNode, Response, DialogProject, DialogProjectExport } from '.
 import { generateId } from '../types';
 
 const STORAGE_KEY = 'dialog-portal-project';
+const PROJECTS_STORAGE_KEY = 'dialog-portal-projects';
+const CURRENT_PROJECT_ID_KEY = 'dialog-portal-current-project-id';
+
+// Загрузка проекта из хранилища проектов по ID
+const loadProjectById = (projectId: string): DialogProject | null => {
+  try {
+    const saved = localStorage.getItem(PROJECTS_STORAGE_KEY);
+    if (saved) {
+      const projects: DialogProject[] = JSON.parse(saved);
+      return projects.find(p => p.id === projectId) || null;
+    }
+  } catch (e) {
+    console.error('Failed to load project by ID:', e);
+  }
+  return null;
+};
+
+// Сохранение проекта в хранилище проектов
+const saveProjectToStorage = (project: DialogProject) => {
+  try {
+    const saved = localStorage.getItem(PROJECTS_STORAGE_KEY);
+    let projects: DialogProject[] = saved ? JSON.parse(saved) : [];
+    
+    const existingIndex = projects.findIndex(p => p.id === project.id);
+    if (existingIndex >= 0) {
+      projects[existingIndex] = project;
+    } else {
+      projects.push(project);
+    }
+    
+    localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
+  } catch (e) {
+    console.error('Failed to save project to storage:', e);
+  }
+};
 
 // Инициализация состояния из localStorage
 const getInitialState = (): { nodes: DialogNode[]; projectName: string } => {
+  // Сначала проверяем, есть ли ID текущего проекта
+  const currentProjectId = localStorage.getItem(CURRENT_PROJECT_ID_KEY);
+  
+  if (currentProjectId) {
+    const project = loadProjectById(currentProjectId);
+    if (project) {
+      return {
+        nodes: project.nodes || [],
+        projectName: project.name || 'Новый проект'
+      };
+    }
+  }
+  
+  // Если нет ID или проект не найден, пробуем загрузить старый формат
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -26,17 +75,31 @@ export const useDialogStore = () => {
   const [nodes, setNodes] = useState<DialogNode[]>(initialState.nodes);
   const [projectName, setProjectName] = useState<string>(initialState.projectName);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [projectId] = useState<string>(() => {
+    return localStorage.getItem(CURRENT_PROJECT_ID_KEY) || generateId();
+  });
+  const [projectAvatar, setProjectAvatar] = useState<string | undefined>(() => {
+    const currentProjectId = localStorage.getItem(CURRENT_PROJECT_ID_KEY);
+    if (currentProjectId) {
+      const project = loadProjectById(currentProjectId);
+      return project?.avatar;
+    }
+    return undefined;
+  });
 
   useEffect(() => {
     const project: DialogProject = {
-      id: generateId(),
+      id: projectId,
       name: projectName,
       nodes,
       createdAt: Date.now(),
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      avatar: projectAvatar
     };
+    // Сохраняем и в старом формате (для обратной совместимости), и в новом хранилище проектов
     localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
-  }, [nodes, projectName]);
+    saveProjectToStorage(project);
+  }, [nodes, projectName, projectId, projectAvatar]);
 
   const addNode = useCallback((position?: { x: number; y: number }) => {
     const newNode: DialogNode = {
@@ -44,12 +107,13 @@ export const useDialogStore = () => {
       title: 'Новый узел',
       text: 'Введите текст диалога...',
       responses: [],
-      position: position || { x: 100, y: 100 }
+      position: position || { x: 100, y: 100 },
+      avatar: projectAvatar // Применяем аватар проекта к новому узлу
     };
     setNodes(prev => [...prev, newNode]);
     setSelectedNodeId(newNode.id);
     return newNode.id;
-  }, []);
+  }, [projectAvatar]);
 
   const updateNode = useCallback((nodeId: string, updates: Partial<DialogNode>) => {
     setNodes(prev => prev.map(node => 
@@ -126,10 +190,12 @@ export const useDialogStore = () => {
     try {
       const project: DialogProject = JSON.parse(jsonString);
       setProjectName(project.name || 'Импортированный проект');
+      setProjectAvatar(project.avatar); // Загружаем аватар проекта
       // При импорте добавляем дефолтные позиции, если их нет
       const nodesWithPositions = (project.nodes || []).map((node, index) => ({
         ...node,
-        position: node.position || { x: 100 + (index % 5) * 300, y: 100 + Math.floor(index / 5) * 250 }
+        position: node.position || { x: 100 + (index % 5) * 300, y: 100 + Math.floor(index / 5) * 250 },
+        avatar: project.avatar || node.avatar // Применяем аватар проекта или узла
       }));
       setNodes(nodesWithPositions);
       return true;
@@ -137,7 +203,7 @@ export const useDialogStore = () => {
       console.error('Failed to import project:', e);
       return false;
     }
-  }, []);
+  }, [setProjectAvatar]);
 
   const validate = useCallback(() => {
     const errors: string[] = [];
@@ -169,6 +235,16 @@ export const useDialogStore = () => {
     ));
   }, []);
 
+  const saveProject = useCallback(() => {
+    saveProjectToStorage({
+      id: projectId,
+      name: projectName,
+      nodes,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    });
+  }, [projectId, projectName, nodes]);
+
   return {
     nodes,
     projectName,
@@ -184,6 +260,9 @@ export const useDialogStore = () => {
     exportToJson,
     importFromJson,
     validate,
-    updateNodePosition
+    updateNodePosition,
+    saveProject,
+    projectAvatar,
+    setProjectAvatar
   };
 };
