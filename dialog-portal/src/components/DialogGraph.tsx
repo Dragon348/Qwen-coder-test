@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { Background, ReactFlowProvider, useViewport } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { DialogNode, Response } from '../types';
@@ -19,11 +19,16 @@ interface CustomNodeData {
   label: string;
   text: string;
   node: DialogNode;
-  onResponseDragStart?: (response: Response, event: React.MouseEvent) => void;
+  onResponseDragStart?: (response: Response, event: React.MouseEvent, responseIndex: number) => void;
   onEditField?: (field: 'title' | 'text' | 'response', responseId?: string) => void;
   onEditInPlace?: (field: 'title' | 'text' | 'response', responseId?: string) => void;
   onAddResponse?: () => void;
 }
+
+const NODE_WIDTH = 280;
+const NODE_HEADER_HEIGHT = 44;
+const RESPONSE_ITEM_HEIGHT = 32;
+const CONTENT_PADDING = 12;
 
 const CustomNode: React.FC<{ 
   data: CustomNodeData;
@@ -96,7 +101,7 @@ const CustomNode: React.FC<{
                 onDragStart={(e) => {
                   e.stopPropagation();
                   if (data.onResponseDragStart) {
-                    data.onResponseDragStart(response, e);
+                    data.onResponseDragStart(response, e, index);
                   }
                 }}
                 onClick={(e) => {
@@ -132,7 +137,7 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
   onAddResponseInPlace,
 }) => {
   // Состояние для отслеживания перетаскиваемого ответа при создании соединения
-  const [draggedResponse, setDraggedResponse] = useState<{ response: Response; sourceNodeId: string } | null>(null);
+  const [draggedResponse, setDraggedResponse] = useState<{ response: Response; sourceNodeId: string; responseIndex: number } | null>(null);
   
   // Получаем доступ к трансформации (масштаб и панорамирование) из React Flow
   const viewport = useViewport();
@@ -145,8 +150,8 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
       label: node.title,
       text: node.text,
       node,
-      onResponseDragStart: (response: Response) => {
-        setDraggedResponse({ response, sourceNodeId: node.id });
+      onResponseDragStart: (response: Response, _event: React.MouseEvent, responseIndex: number) => {
+        setDraggedResponse({ response, sourceNodeId: node.id, responseIndex });
       },
       onEditField: (field: 'title' | 'text' | 'response', responseId?: string) => {
         // При клике на поле редактирования выбираем узел и передаем фокус на соответствующее поле
@@ -173,9 +178,9 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
     draggable: true
   }));
 
-  const edges: Array<{ id: string; source: string; target: string; label?: string }> = [];
+  const edges: Array<{ id: string; source: string; target: string; label?: string; responseIndex: number }> = [];
   dialogNodes.forEach(node => {
-    node.responses.forEach(response => {
+    node.responses.forEach((response, index) => {
       if (response.nextNodeId) {
         edges.push({
           id: `${node.id}-${response.id}`,
@@ -183,7 +188,8 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
           target: response.nextNodeId,
           label: response.requirement 
             ? `${response.text} (<${response.requirement.characteristic}: ${response.requirement.value}>)`
-            : response.text
+            : response.text,
+          responseIndex: index
         });
       }
     });
@@ -280,18 +286,28 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
             if (!sourceNode || !targetNode) return null;
             
             // Вычисляем координаты для начала и конца стрелки с учётом смещения холста
-            // Начало: правая сторона исходного узла (середина по высоте)
-            const startX = (sourceNode.position?.x || 0) - canvasBounds.minX + 50 + 280;
-            const startY = (sourceNode.position?.y || 0) - canvasBounds.minY + 50 + 50;
+            // Начало: правая сторона исходного узла на уровне конкретного ответа
+            const nodeX = (sourceNode.position?.x || 0) - canvasBounds.minX + 50;
+            const nodeY = (sourceNode.position?.y || 0) - canvasBounds.minY + 50;
+            
+            // Вычисляем Y координату для конкретного ответа
+            // HEADER_HEIGHT + padding + (index * RESPONSE_ITEM_HEIGHT) + половина высоты ответа
+            const responseY = nodeY + NODE_HEADER_HEIGHT + CONTENT_PADDING + (edge.responseIndex * RESPONSE_ITEM_HEIGHT) + (RESPONSE_ITEM_HEIGHT / 2);
+            
+            // Начало: правая сторона исходного узла на уровне ответа
+            const startX = nodeX + NODE_WIDTH;
+            const startY = responseY;
+            
             // Конец: левая сторона целевого узла (середина по высоте)
             const endX = (targetNode.position?.x || 0) - canvasBounds.minX + 50;
-            const endY = (targetNode.position?.y || 0) - canvasBounds.minY + 50;
+            const endY = (targetNode.position?.y || 0) - canvasBounds.minY + 50 + 50;
             
             const labelStr = edge.label || '';
             
             // Вычисляем контрольные точки для кривой Безье
             // Это позволяет создать плавную кривую, которая обходит блоки
             const dx = Math.abs(endX - startX);
+            const dy = Math.abs(endY - startY);
             
             // Контрольные точки для кривой Безье
             // Первая контрольная точка смещена вправо от начальной точки
