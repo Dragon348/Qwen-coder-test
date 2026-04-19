@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Controls, Background, ReactFlowProvider } from '@xyflow/react';
+import { Controls, Background, ReactFlowProvider, useViewport } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { DialogNode, Response } from '../types';
 
@@ -102,6 +102,9 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
 }) => {
   // Состояние для отслеживания перетаскиваемого ответа при создании соединения
   const [draggedResponse, setDraggedResponse] = useState<{ response: Response; sourceNodeId: string } | null>(null);
+  
+  // Получаем доступ к трансформации (масштаб и панорамирование) из React Flow
+  const viewport = useViewport();
 
   // Преобразование узлов диалога в узлы React Flow
   const rfNodes = dialogNodes.map(node => ({
@@ -146,11 +149,16 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
   const handleDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     if (draggedResponse) {
+      // Получаем текущую трансформацию для учёта масштаба и панорамирования
+      const zoom = viewport.zoom || 1;
+      const panX = viewport.x || 0;
+      const panY = viewport.y || 0;
+      
       // Получаем координаты мыши относительно контейнера с учётом масштаба
       const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-      // Координаты внутри SVG-контейнера
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
+      // Координаты внутри SVG-контейнера с учётом трансформации
+      const x = (event.clientX - rect.left - panX) / zoom;
+      const y = (event.clientY - rect.top - panY) / zoom;
       
       // Находим узел, на который dropped
       // Размеры узла: 280x200 пикселей
@@ -173,11 +181,26 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
       }
       setDraggedResponse(null);
     }
-  }, [draggedResponse, dialogNodes, onCreateConnection]);
+  }, [draggedResponse, dialogNodes, onCreateConnection, viewport]);
 
   const handleDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
   }, []);
+
+  // Вычисляем размеры холста для правильного отображения стрелок
+  const canvasBounds = dialogNodes.reduce((bounds, node) => {
+    const x = node.position?.x || 0;
+    const y = node.position?.y || 0;
+    return {
+      minX: Math.min(bounds.minX, x),
+      minY: Math.min(bounds.minY, y),
+      maxX: Math.max(bounds.maxX, x + 280),
+      maxY: Math.max(bounds.maxY, y + 200)
+    };
+  }, { minX: 0, minY: 0, maxX: 800, maxY: 600 });
+  
+  const canvasWidth = Math.max(canvasBounds.maxX - canvasBounds.minX + 100, 800);
+  const canvasHeight = Math.max(canvasBounds.maxY - canvasBounds.minY + 100, 600);
 
   return (
     <div 
@@ -186,14 +209,14 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
       onDrop={handleDrop}
       onDragOver={handleDragOver}
     >
-      <div className="graph-canvas">
+      <div className="graph-canvas" style={{ width: canvasWidth, height: canvasHeight }}>
         {rfNodes.map(n => (
           <div
             key={n.id}
             className={`graph-node ${n.id === selectedNodeId ? 'selected' : ''}`}
             style={{
-              left: n.position.x,
-              top: n.position.y,
+              left: n.position.x - canvasBounds.minX + 50,
+              top: n.position.y - canvasBounds.minY + 50,
               position: 'absolute'
             }}
             onClick={() => onSelectNode(n.id)}
@@ -207,19 +230,19 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
           </div>
         ))}
         
-        <svg className="graph-edges" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+        <svg className="graph-edges" style={{ position: 'absolute', top: 0, left: 0, width: canvasWidth, height: canvasHeight, pointerEvents: 'none' }}>
           {edges.map(edge => {
             const sourceNode = dialogNodes.find(n => n.id === edge.source);
             const targetNode = dialogNodes.find(n => n.id === edge.target);
             if (!sourceNode || !targetNode) return null;
             
-            // Вычисляем координаты для начала и конца стрелки
+            // Вычисляем координаты для начала и конца стрелки с учётом смещения холста
             // Начало: правая сторона исходного узла (середина по высоте)
-            const startX = (sourceNode.position?.x || 0) + 280;
-            const startY = (sourceNode.position?.y || 0) + 50;
+            const startX = (sourceNode.position?.x || 0) - canvasBounds.minX + 50 + 280;
+            const startY = (sourceNode.position?.y || 0) - canvasBounds.minY + 50 + 50;
             // Конец: левая сторона целевого узла (середина по высоте)
-            const endX = targetNode.position?.x || 0;
-            const endY = targetNode.position?.y || 0;
+            const endX = (targetNode.position?.x || 0) - canvasBounds.minX + 50;
+            const endY = (targetNode.position?.y || 0) - canvasBounds.minY + 50;
             
             const labelStr = edge.label || '';
             
