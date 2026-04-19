@@ -1,0 +1,24 @@
+/* App specific styles */
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.graph-area {
+  flex: 1;
+  position: relative;
+}
+
+.editor-panel {
+  width: 400px;
+  border-left: 1px solid #45475a;
+  background: #313244;
+  overflow-y: auto;
+}
