@@ -145,16 +145,23 @@ button {
   width: 100%;
   height: 100%;
   position: relative;
-  overflow: auto;
+  overflow: visible;
+}
+
+.graph-container {
+  position: absolute;
+  min-width: 100%;
+  min-height: 100%;
 }
 
 .graph-node {
   cursor: pointer;
   transition: transform 0.2s;
+  user-select: none;
 }
 
 .graph-node:hover {
-  transform: scale(1.02);
+  z-index: 10;
 }
 
 .graph-node.selected .custom-node {
@@ -192,6 +199,54 @@ button {
   color: #bac2de;
   line-height: 1.5;
   margin-bottom: 8px;
+}
+
+.responses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.response-item-graph {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background-color: #313244;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: grab;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.response-item-graph:hover {
+  background-color: #45475a;
+  border-color: #89b4fa;
+}
+
+.response-item-graph:active {
+  cursor: grabbing;
+}
+
+.response-index {
+  color: #89b4fa;
+  font-weight: 600;
+  min-width: 16px;
+}
+
+.response-text {
+  color: #bac2de;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.response-target {
+  color: #a6e3a1;
+  font-size: 10px;
 }
 
 .response-count {
@@ -354,6 +409,24 @@ button {
   font-size: 12px;
   padding: 4px 0;
   color: #bac2de;
+}
+
+/* Zoom Controls */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: #1e1e2e;
+  border-radius: 6px;
+  margin-right: 8px;
+}
+
+.zoom-level {
+  font-size: 12px;
+  color: #a6adc8;
+  min-width: 40px;
+  text-align: center;
 }
 
 /* React Flow Overrides */
