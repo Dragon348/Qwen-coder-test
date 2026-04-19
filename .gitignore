@@ -1,4 +1,4 @@
-```
+```gitignore
 # Dependencies
 node_modules/
 
@@ -7,10 +7,8 @@ dist/
 build/
 *.js
 *.ts
-
-# Logs and temp files
-*.log
-*.tmp
+*.tsx
+*.css
 
 # Environment
 .env
@@ -20,50 +18,39 @@ build/
 # Editors
 .vscode/
 .idea/
+
+# Logs and temp files
+*.log
+*.tmp
 *.swp
-*.swo
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
-venv/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-.git/modules/
-*.sublime-workspace
-.pytest_cache/
-.mypy_cache/
-.hypothesis/
 
-# Compiled and binary files
+# Compiled/Binary
 *.o
 *.obj
-*.out
 *.exe
 *.dll
 *.so
 *.a
-*.class
+*.out
 
-# OS generated files
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Caches
+.mypy_cache/
+.pytest_cache/
+.gradle/
+target/
+
+# System
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 ```
