@@ -154,6 +154,29 @@ function App() {
     updateResponse(sourceNodeId, responseId, { nextNodeId: targetNodeId });
   };
 
+  // Обработчик редактирования прямо в узле - открывает панель редактора и фокусирует нужное поле
+  const handleEditNodeInPlace = useCallback((nodeId: string, field: 'title' | 'text' | 'response', responseId?: string) => {
+    setSelectedNodeId(nodeId);
+    // Передаём событие через CustomEvent для обработки в NodeEditor
+    const event = new CustomEvent('dialog-focus-field', { 
+      detail: { nodeId, field, responseId } 
+    });
+    window.dispatchEvent(event);
+  }, [setSelectedNodeId]);
+
+  // Обработчик добавления ответа прямо из узла
+  const handleAddResponseInPlace = useCallback((nodeId: string) => {
+    addResponse(nodeId);
+    setSelectedNodeId(nodeId);
+    // Фокус на новом ответе
+    setTimeout(() => {
+      const event = new CustomEvent('dialog-focus-field', { 
+        detail: { nodeId, field: 'response' as const } 
+      });
+      window.dispatchEvent(event);
+    }, 100);
+  }, [addResponse, setSelectedNodeId]);
+
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
   return (
@@ -197,6 +220,8 @@ function App() {
               onUpdateNodePosition={updateNodePosition}
               onCreateConnection={handleCreateConnection}
               onNodeMouseDown={handleNodeMouseDown}
+              onEditNodeInPlace={handleEditNodeInPlace}
+              onAddResponseInPlace={handleAddResponseInPlace}
             />
           </div>
         </div>

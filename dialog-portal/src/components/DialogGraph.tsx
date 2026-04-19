@@ -10,6 +10,8 @@ interface DialogGraphProps {
   onUpdateNodePosition: (nodeId: string, position: { x: number; y: number }) => void;
   onCreateConnection: (sourceNodeId: string, targetNodeId: string, responseId: string) => void;
   onNodeMouseDown?: (nodeId: string, event: React.MouseEvent) => void;
+  onEditNodeInPlace?: (nodeId: string, field: 'title' | 'text' | 'response', responseId?: string) => void;
+  onAddResponseInPlace?: (nodeId: string) => void;
 }
 
 // Интерфейс данных для кастомного узла
@@ -19,6 +21,8 @@ interface CustomNodeData {
   node: DialogNode;
   onResponseDragStart?: (response: Response, event: React.MouseEvent) => void;
   onEditField?: (field: 'title' | 'text' | 'response', responseId?: string) => void;
+  onEditInPlace?: (field: 'title' | 'text' | 'response', responseId?: string) => void;
+  onAddResponse?: () => void;
 }
 
 const CustomNode: React.FC<{ 
@@ -29,27 +33,56 @@ const CustomNode: React.FC<{
   
   return (
     <div className={`custom-node ${hasRequirement ? 'has-requirement' : ''} ${selected ? 'selected' : ''}`}>
-      {/* Клик по заголовку открывает редактирование заголовка */}
-      <div 
-        className="custom-node-header"
-        onClick={(e) => {
-          e.stopPropagation();
-          if (data.onEditField) {
-            data.onEditField('title');
-          }
-        }}
-        title="Кликните для редактирования заголовка"
-        style={{ cursor: 'pointer' }}
-      >
-        {data.label}
+      {/* Верхняя панель с заголовком и кнопками действий */}
+      <div className="custom-node-header-row">
+        {/* Клик по заголовку открывает редактирование заголовка */}
+        <div 
+          className="custom-node-header-title"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (data.onEditInPlace) {
+              data.onEditInPlace('title');
+            }
+          }}
+          title="Кликните для редактирования заголовка"
+          style={{ cursor: 'pointer', flex: 1 }}
+        >
+          {data.label}
+        </div>
+        <div className="custom-node-actions">
+          <button
+            className="node-action-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (data.onEditInPlace) {
+                data.onEditInPlace('title');
+              }
+            }}
+            title="Редактировать заголовок"
+          >
+            ✏️
+          </button>
+          <button
+            className="node-action-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (data.onAddResponse) {
+                data.onAddResponse();
+              }
+            }}
+            title="Добавить ответ"
+          >
+            +
+          </button>
+        </div>
       </div>
       <div className="custom-node-content">
         {/* Клик по тексту открывает редактирование текста */}
         <p 
           onClick={(e) => {
             e.stopPropagation();
-            if (data.onEditField) {
-              data.onEditField('text');
+            if (data.onEditInPlace) {
+              data.onEditInPlace('text');
             }
           }}
           title="Кликните для редактирования текста"
@@ -72,8 +105,8 @@ const CustomNode: React.FC<{
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (data.onEditField) {
-                    data.onEditField('response', response.id);
+                  if (data.onEditInPlace) {
+                    data.onEditInPlace('response', response.id);
                   }
                 }}
                 title="Перетащите для создания связи или кликните для редактирования"
@@ -99,6 +132,8 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
   onSelectNode,
   onCreateConnection,
   onNodeMouseDown,
+  onEditNodeInPlace,
+  onAddResponseInPlace,
 }) => {
   // Состояние для отслеживания перетаскиваемого ответа при создании соединения
   const [draggedResponse, setDraggedResponse] = useState<{ response: Response; sourceNodeId: string } | null>(null);
@@ -125,6 +160,18 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
           detail: { nodeId: node.id, field, responseId } 
         });
         window.dispatchEvent(event);
+      },
+      onEditInPlace: (field: 'title' | 'text' | 'response', responseId?: string) => {
+        // Обработка редактирования прямо в узле
+        if (onEditNodeInPlace) {
+          onEditNodeInPlace(node.id, field, responseId);
+        }
+      },
+      onAddResponse: () => {
+        // Обработка добавления ответа прямо в узле
+        if (onAddResponseInPlace) {
+          onAddResponseInPlace(node.id);
+        }
       }
     },
     draggable: true
@@ -316,3 +363,41 @@ export const DialogGraph: React.FC<DialogGraphProps> = (props) => {
     </ReactFlowProvider>
   );
 };
+
+// Стили для кнопок действий в узле
+const style = document.createElement('style');
+style.textContent = `
+  .custom-node-header-row {
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, #89b4fa, #b4befe);
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .custom-node-header-title {
+    color: #1e1e2e;
+    font-weight: 600;
+    font-size: 14px;
+    flex: 1;
+  }
+  .custom-node-actions {
+    display: flex;
+    gap: 4px;
+  }
+  .node-action-btn {
+    background: rgba(255, 255, 255, 0.3);
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+  .node-action-btn:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+`;
+if (typeof document !== 'undefined' && !document.getElementById('dialog-graph-inline-styles')) {
+  style.id = 'dialog-graph-inline-styles';
+  document.head.appendChild(style);
+}
