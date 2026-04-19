@@ -75,7 +75,7 @@ export const useDialogStore = () => {
   const [nodes, setNodes] = useState<DialogNode[]>(initialState.nodes);
   const [projectName, setProjectName] = useState<string>(initialState.projectName);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [projectId, setProjectId] = useState<string>(() => {
+  const [projectId] = useState<string>(() => {
     return localStorage.getItem(CURRENT_PROJECT_ID_KEY) || generateId();
   });
 

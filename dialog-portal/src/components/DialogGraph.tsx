@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Controls, Background, ReactFlowProvider, useViewport } from '@xyflow/react';
+import { Background, ReactFlowProvider, useViewport } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { DialogNode, Response } from '../types';
 
@@ -342,7 +342,6 @@ export const DialogGraphInner: React.FC<DialogGraphProps> = ({
           </defs>
         </svg>
       </div>
-      <Controls />
       <Background />
     </div>
   );

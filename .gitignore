@@ -5,46 +5,54 @@ node_modules/
 # Build outputs
 dist/
 build/
-*.js
-*.ts
-*.tsx
-*.css
+*.tsbuildinfo
 
-# Environment variables
+# Environment
 .env
 .env.local
 *.env.*
 
-# Logs
-*.log
-
-# IDE files
+# Editors
 .vscode/
 .idea/
-*.swp
-*.swo
-*.tmp
 
-# Python
+# Python (if any Python files exist in project)
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-venv/
-.venv/
-.env
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
 
 # Coverage reports
 coverage/
 htmlcov/
 .coverage
 
-# OS generated files
-.DS_Store
-Thumbs.db
+# MyPy cache
+.mypy_cache/
+.pytest_cache/
 
-# Compressed files
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.a
+*.o
+*.obj
+*.out
+
+# Archives
 *.zip
 *.gz
 *.tar
@@ -53,4 +61,18 @@ Thumbs.db
 *.xz
 *.7z
 *.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
 ```

@@ -5,7 +5,8 @@ import { NodeEditor } from './components/NodeEditor'
 import { DialogGraph } from './components/DialogGraph'
 import './App.css'
 
-const CURRENT_PROJECT_ID_KEY = 'dialog-portal-current-project-id';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _CURRENT_PROJECT_ID_KEY_UNUSED = 'dialog-portal-current-project-id';
 
 function App() {
   const {
@@ -23,7 +24,8 @@ function App() {
     exportToJson,
     importFromJson,
     validate,
-    updateNodePosition
+    updateNodePosition,
+    saveProject
   } = useDialogStore();
   
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
